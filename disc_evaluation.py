@@ -39,7 +39,7 @@ try:
         diff = cv2.absdiff(depth_image, bg_depth)
 
         # 閾値処理（動いた部分を白く）
-        _, fg_mask = cv2.threshold(diff, 100, 255, cv2.THRESH_BINARY)
+        _, fg_mask = cv2.threshold(diff, 1000, 255, cv2.THRESH_BINARY)
 
         # 8bit変換（輪郭検出のため）
         fg_mask = np.uint8(fg_mask)
@@ -58,7 +58,8 @@ try:
                 cy = int(M["m01"] / M["m00"])
                 depth = depth_frame.get_distance(cx, cy)
                 point = rs.rs2_deproject_pixel_to_point(depth_intrinsics, [cx, cy], depth)
-                print(f"検出位置: 2D=({cx}, {cy}), 深度={depth:.3f}m, 3D={point}")
+                #print(f"検出位置: 2D=({cx}, {cy}), 深度={int(depth*1000):4d}mm, 3D=({(point[0]*1000):.2f},{(point[1]*1000):.2f},{(point[2]*1000):.2f})")
+                print(f"検出位置: ({(point[0]*1000):6.1f},{(point[1]*1000):6.1f},{(point[2]*1000):6.1f})")
 
                 # デバッグ表示用画像作成（カラーなし）
                 show = cv2.applyColorMap(
