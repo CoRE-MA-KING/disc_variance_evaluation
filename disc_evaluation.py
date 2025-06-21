@@ -39,7 +39,7 @@ try:
         diff = cv2.absdiff(depth_image, bg_depth)
 
         # 閾値処理（動いた部分を白く）
-        _, fg_mask = cv2.threshold(diff, 30, 255, cv2.THRESH_BINARY)
+        _, fg_mask = cv2.threshold(diff, 100, 255, cv2.THRESH_BINARY)
 
         # 8bit変換（輪郭検出のため）
         fg_mask = np.uint8(fg_mask)
@@ -50,7 +50,7 @@ try:
 
         for cnt in contours:
             area = cv2.contourArea(cnt)
-            if 3000 < area < 30000:
+            if 3000 < area < 60000:
                 M = cv2.moments(cnt)
                 if M["m00"] == 0:
                     continue
