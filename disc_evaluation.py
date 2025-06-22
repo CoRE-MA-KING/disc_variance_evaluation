@@ -20,6 +20,9 @@ depth_intrinsics = profile.get_stream(rs.stream.depth).as_video_stream_profile()
 # 初期フレーム（背景）保存用
 bg_depth = None
 
+disc_flag = 0  # 今回のフレームでディスクが検出されたか
+pre_disc_flag = 0  # 前回のフレームでディスクが検出されていたか
+disc_count = 0
 try:
     while True:
         frames = pipeline.wait_for_frames()
@@ -48,18 +51,25 @@ try:
         # 輪郭検出
         contours, _ = cv2.findContours(fg_mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
 
+
+        disc_flag = 0  # 毎フレーム初期化
+
         for cnt in contours:
             area = cv2.contourArea(cnt)
             if 3000 < area < 60000:
                 M = cv2.moments(cnt)
                 if M["m00"] == 0:
                     continue
+                
+                # 通過検知フラグを立てる
+                disc_flag = 1
+
                 cx = int(M["m10"] / M["m00"])
                 cy = int(M["m01"] / M["m00"])
                 depth = depth_frame.get_distance(cx, cy)
                 point = rs.rs2_deproject_pixel_to_point(depth_intrinsics, [cx, cy], depth)
                 #print(f"検出位置: 2D=({cx}, {cy}), 深度={int(depth*1000):4d}mm, 3D=({(point[0]*1000):.2f},{(point[1]*1000):.2f},{(point[2]*1000):.2f})")
-                print(f"検出位置: ({(point[0]*1000):6.1f},{(point[1]*1000):6.1f},{(point[2]*1000):6.1f})")
+                print(f"検出位置: ({(point[0]*1000):6.1f},{(point[1]*1000):6.1f},{(point[2]*1000):6.1f}), disc_count{disc_count}")
 
                 # デバッグ表示用画像作成（カラーなし）
                 show = cv2.applyColorMap(
@@ -68,6 +78,14 @@ try:
                 )
                 cv2.circle(show, (cx, cy), 10, (0, 255, 0), -1)
                 cv2.imshow("Depth with Detection", show)
+
+
+        if disc_flag == 1 and pre_disc_flag == 0:
+            disc_count += 1
+
+        # 現在の状態を記録しておく
+        pre_disc_flag = disc_flag        
+
 
         cv2.imshow("Depth Foreground Mask", fg_mask)
 
